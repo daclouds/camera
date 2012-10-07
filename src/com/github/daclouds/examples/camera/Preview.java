@@ -1,28 +1,31 @@
 package com.github.daclouds.examples.camera;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 import android.content.Context;
 import android.hardware.Camera;
-import android.os.Environment;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import com.github.daclouds.examples.camera.service.StorageService;
+import com.github.daclouds.examples.camera.service.StorageServiceImpl;
+
 public class Preview extends SurfaceView implements SurfaceHolder.Callback, Camera.PictureCallback {
 
 	SurfaceHolder holder;
 	Camera camera;
+	StorageService storageService;
 	
 	Preview(Context context) {
 		super(context);
 		holder = getHolder();
 		holder.addCallback(this);
 		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+		
+		storageService = new StorageServiceImpl();
 	}
 	
 	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
@@ -49,31 +52,29 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback, Came
 
 	public void onPictureTaken(byte[] data, Camera camera) {
 		try {
-			data2sd(getContext(), data, System.currentTimeMillis() + ".jpg");
+			
+			storageService.saveToSdCard(System.currentTimeMillis() + ".jpg", data, getContext());
 		} catch (Exception e) {
 			Log.e(VIEW_LOG_TAG, e.toString());
 		}
 		
 		camera.startPreview();
 	}
-	
-	private void data2sd(Context context, byte[] data, String filename) throws IOException {
-		FileOutputStream fos = null;
-		try {
-			fos = new FileOutputStream(Environment.getExternalStorageDirectory() + File.separator + filename);
-			fos.write(data);
-			fos.close();
-		} catch (FileNotFoundException e) {
-			throw new RuntimeException(e);
-		} catch (IOException e) {
-			if (fos != null) fos.close();
-			throw new RuntimeException(e);
-		}
-	}
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		if (event.getAction() == MotionEvent.ACTION_DOWN) {
+			Camera.Parameters params = camera.getParameters();
+			
+			List<Camera.Size> sizes = params.getSupportedPictureSizes();
+			for (Camera.Size size : sizes) {
+				if (size.width <= 800 || size.height <= 800) {
+					params.setPictureSize(size.width, size.height);
+					params.setJpegQuality(70);
+					break;
+				}
+			}
+			camera.setParameters(params);
 			camera.takePicture(null, null, this);
 		}
 		return true;
