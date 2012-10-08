@@ -25,7 +25,11 @@ public class StorageServiceImpl implements StorageService {
 	public void saveToSdCard(String filename, byte[] data, Context context) throws IOException {
 		FileOutputStream fos = null;
 		try {
-			fos = new FileOutputStream(Environment.getExternalStorageDirectory() + File.separator + filename);
+			File targetDirectory = new File(Environment.getExternalStorageDirectory() + File.separator + "android-cctv");
+			if (!targetDirectory.exists()) {
+				targetDirectory.mkdirs();
+			}
+			fos = new FileOutputStream(targetDirectory + File.separator + filename);
 			fos.write(data);
 			fos.flush();
 		} catch (FileNotFoundException e) {

@@ -5,6 +5,7 @@ import java.util.List;
 
 import android.content.Context;
 import android.hardware.Camera;
+import android.hardware.Camera.AutoFocusCallback;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -52,7 +53,6 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback, Came
 
 	public void onPictureTaken(byte[] data, Camera camera) {
 		try {
-			
 			storageService.saveToSdCard(System.currentTimeMillis() + ".jpg", data, getContext());
 		} catch (Exception e) {
 			Log.e(VIEW_LOG_TAG, e.toString());
@@ -64,6 +64,8 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback, Came
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		if (event.getAction() == MotionEvent.ACTION_DOWN) {
+			
+			
 			Camera.Parameters params = camera.getParameters();
 			
 			List<Camera.Size> sizes = params.getSupportedPictureSizes();
@@ -75,9 +77,22 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback, Came
 				}
 			}
 			camera.setParameters(params);
-			camera.takePicture(null, null, this);
+			camera.autoFocus(autoFocusCallback);
 		}
 		return true;
 	}
+	
+	public void takePicture(Camera camera) {
+		camera.takePicture(null, null, this);
+	}
+	
+	AutoFocusCallback autoFocusCallback = new AutoFocusCallback() {
+		
+		public void onAutoFocus(boolean success, Camera camera) {
+			if (success) {
+				takePicture(camera);
+			}
+		}
+	};
 	
 }
